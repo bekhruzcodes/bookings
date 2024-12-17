@@ -6,7 +6,7 @@ class BookingsController extends \yii\rest\Controller
 {
     public function actionIndex()
     {
-        return $this->render('index');
+        return ["name" => "Rock"];
     }
 
 }

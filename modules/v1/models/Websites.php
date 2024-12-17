@@ -64,4 +64,15 @@ class Websites extends \yii\db\ActiveRecord
     {
         return $this->hasMany(Bookings::class, ['website_id' => 'id']);
     }
+
+
+
+    /**
+     * Generate access token
+     */
+    public function generateAccessToken()
+    {
+        $this->access_token = Yii::$app->security->generateRandomString(40);
+    }
+
 }
