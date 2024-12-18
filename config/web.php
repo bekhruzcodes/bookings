@@ -9,9 +9,9 @@ $config = [
     'bootstrap' => ['log'],
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
-        '@npm'   => '@vendor/npm-asset',
+        '@npm' => '@vendor/npm-asset',
     ],
-    'modules' => [ 'v1' => [ 'class' => 'app\modules\v1\Module', ], ],
+    'modules' => ['v1' => ['class' => 'app\modules\v1\Module',],],
     'components' => [
         'request' => [
             'parsers' => [
@@ -51,8 +51,18 @@ $config = [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => 'v1/bookings',
+                    'pluralize' => false,
+                    // Optional: Custom HTTP methods if needed
+//                    'extraPatterns' => [
+//                        'GET {id}' => 'view', // Custom rule to map `GET /v1/bookings/{id}` to the `view` action
+//                    ],
+                ],
             ],
         ],
+
     ],
     'params' => $params,
 ];
