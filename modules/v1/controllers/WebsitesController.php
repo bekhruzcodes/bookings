@@ -36,6 +36,7 @@ class WebsitesController extends Controller
     public function actionRegister(): array
     {
         $request = Yii::$app->request;
+        $response = Yii::$app->response;
         $website = new Websites();
 
         // Load input data
@@ -44,7 +45,6 @@ class WebsitesController extends Controller
 
         // Check if input is valid
         if ($website->validate()) {
-
             // Save website to database
             if ($website->save()) {
                 return [
@@ -59,17 +59,21 @@ class WebsitesController extends Controller
                     ],
                 ];
             } else {
+                $response->statusCode = 500; // Internal Server Error
                 return [
                     'success' => false,
                     'message' => 'Failed to save website data.',
                 ];
             }
         } else {
+            $response->statusCode = 422; // Set status code for data validation failure
             return [
                 'success' => false,
-                'message' => 'Validation failed.',
+                'message' => 'Data Validation Failed.',
                 'errors' => $website->errors,
             ];
         }
     }
+
+
 }
