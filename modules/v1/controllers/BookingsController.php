@@ -46,6 +46,8 @@ class BookingsController extends ActiveController
         ];
     }
 
+
+
     /**
      * Customize the data provider for the index action to include _meta and _links
      */

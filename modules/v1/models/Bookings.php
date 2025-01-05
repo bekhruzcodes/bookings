@@ -45,6 +45,16 @@ class Bookings extends \yii\db\ActiveRecord
         ];
     }
 
+
+    public function fields()
+    {
+        $fields = parent::fields();
+        // Remove website_id from the response
+        unset($fields['website_id']);
+
+        return $fields;
+    }
+
     /**
      * {@inheritdoc}
      */
