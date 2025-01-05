@@ -3,6 +3,7 @@
 namespace app\modules\v1\models;
 
 use Yii;
+use yii\web\IdentityInterface;
 
 /**
  * This is the model class for table "websites".
@@ -16,7 +17,7 @@ use Yii;
  *
  * @property Bookings[] $bookings
  */
-class Websites extends \yii\db\ActiveRecord
+class Websites extends \yii\db\ActiveRecord implements IdentityInterface
 {
     /**
      * {@inheritdoc}
@@ -56,6 +57,49 @@ class Websites extends \yii\db\ActiveRecord
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public static function findIdentity($id)
+    {
+        return static::findOne($id);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public static function findIdentityByAccessToken($token, $type = null)
+    {
+// Find the website by access token
+        return static::findOne(['access_token' => $token]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getAuthKey()
+    {
+// Auth key can be used for additional checks but is not needed in this case
+        return null;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function validateAuthKey($authKey)
+    {
+// You can implement additional validation here if needed
+        return true;
+    }
+
+    /**
      * Gets query for [[Bookings]].
      *
      * @return \yii\db\ActiveQuery
@@ -65,8 +109,6 @@ class Websites extends \yii\db\ActiveRecord
         return $this->hasMany(Bookings::class, ['website_id' => 'id']);
     }
 
-
-
     /**
      * Generate access token
      */
@@ -74,5 +116,4 @@ class Websites extends \yii\db\ActiveRecord
     {
         $this->access_token = Yii::$app->security->generateRandomString(40);
     }
-
 }

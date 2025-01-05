@@ -20,14 +20,16 @@ class CustomBearerAuth extends AuthMethod
         if ($authHeader !== null && preg_match('/^Bearer\s+(.*?)$/', $authHeader, $matches)) {
             $token = $matches[1];
 
-            // Validate the token using the Websites model
-            $this->website = Websites::findOne(['access_token' => $token]);
+// Validate the token using the Websites model
+            $this->website = Websites::findIdentityByAccessToken($token);
             if ($this->website) {
-                return $this->website; // Return the authenticated Websites model
+// Store the website as the authenticated user
+                \Yii::$app->user->identity = $this->website;
+                return $this->website; // Return the authenticated Website model
             }
         }
 
-        // If token is invalid, throw Unauthorized exception
+// If token is invalid, throw Unauthorized exception
         throw new UnauthorizedHttpException('Your request was made with invalid credentials.');
     }
 }

@@ -2,6 +2,7 @@
 
 namespace app\modules\v1\controllers;
 
+use Yii;
 use yii\rest\ActiveController;
 use yii\web\Response;
 use yii\data\ActiveDataProvider;
@@ -91,6 +92,53 @@ class BookingsController extends ActiveController
             ];
         };
 
+        unset($actions['create']);
         return $actions;
     }
+
+    public function actionCreate()
+    {
+        // Get the currently authenticated website
+        $website = Yii::$app->user->identity;
+
+        if ($website && isset($website->id)) {
+            $model = new Bookings();
+
+            if ($model->load(Yii::$app->request->post(), '')) {
+                $model->website_id = $website->id;
+
+                if ($model->save()) {
+                    // Return success with status 201 Created
+                    Yii::$app->response->statusCode = 201;
+                    return [
+                        'status' => 'success',
+                        'data' => $model,
+                    ];
+                } else {
+                    // Validation failed, return error with status 422 Unprocessable Entity
+                    Yii::$app->response->statusCode = 422;
+                    return [
+                        'status' => 'error',
+                        'errors' => $model->errors,
+                    ];
+                }
+            }
+
+            // Input data invalid, return error with status 400 Bad Request
+            Yii::$app->response->statusCode = 400;
+            return [
+                'status' => 'error',
+                'message' => 'Invalid input data.',
+            ];
+        } else {
+            // Authentication failed, return error with status 401 Unauthorized
+            Yii::$app->response->statusCode = 401;
+            return [
+                'status' => 'error',
+                'message' => 'Authentication failed or website_id is missing.',
+            ];
+        }
+    }
+
+
 }
