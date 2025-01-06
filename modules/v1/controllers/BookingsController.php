@@ -18,7 +18,7 @@ class BookingsController extends ActiveController
     /**
      * Attach Bearer Token Authentication
      */
-    public function behaviors()
+    public function behaviors(): array
     {
         $behaviors = parent::behaviors();
 
@@ -36,13 +36,13 @@ class BookingsController extends ActiveController
     /**
      * Map actions to allowed HTTP methods
      */
-    public function verbs()
+    public function verbs(): array
     {
         return [
             'index' => ['GET'],
             'create' => ['POST'],
             'view' => ['GET'],
-            'update' => ['PUT', 'PATCH'],
+            'update' => ['PUT'],
             'delete' => ['DELETE'],
         ];
     }
@@ -52,7 +52,7 @@ class BookingsController extends ActiveController
     /**
      * Customize the data provider for the index action to include _meta and _links
      */
-    public function actions()
+    public function actions(): array
     {
         $actions = parent::actions();
 
@@ -93,10 +93,11 @@ class BookingsController extends ActiveController
         };
 
         unset($actions['create']);
+        unset($actions['options']);
         return $actions;
     }
 
-    public function actionCreate()
+    public function actionCreate(): array
     {
         // Get the currently authenticated website
         $website = Yii::$app->user->identity;
@@ -138,6 +139,14 @@ class BookingsController extends ActiveController
                 'message' => 'Authentication failed or website_id is missing.',
             ];
         }
+    }
+
+
+    public function actionOptions(): array
+    {
+        Yii::$app->response->statusCode = 204;  // Indicating "No Content"
+        Yii::$app->response->headers->add('Allow', 'GET, POST, PUT, DELETE, OPTIONS');  // Define allowed methods
+        return [];  // Returning an empty array for body, as per convention
     }
 
 
