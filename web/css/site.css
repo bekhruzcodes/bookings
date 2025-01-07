@@ -1,88 +1,244 @@
-main > .container {
-    padding: 70px 15px 20px;
+.documentation {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 10% 15%;
+    font-family: system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    color: #e1e1e6;
+    background-color: #1e1e1e;
 }
 
-.footer {
-    background-color: #f5f5f5;
-    font-size: .9em;
-    height: 60px;
+.documentation h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #f5f5f5;
 }
 
-.footer > .container {
-    padding-right: 15px;
-    padding-left: 15px;
+.documentation h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin: 3rem 0 1.5rem;
+    color: #f0f0f0;
 }
 
-.not-set {
-    color: #c55;
-    font-style: italic;
+.documentation h3 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 2rem 0 1rem;
+    color: #c9c9c9;
 }
 
-/* add sorting icons to gridview sort links */
-a.asc:after, a.desc:after {
-    content: '';
-    left: 3px;
-    display: inline-block;
-    width: 0;
-    height: 0;
-    border: solid 5px transparent;
-    margin: 4px 4px 2px 4px;
-    background: transparent;
+.documentation p {
+    margin-bottom: 1.2rem;
+    font-size: 1.1rem;
+    color: #d0d0d0;
 }
 
-a.asc:after {
-    border-bottom: solid 7px #212529;
-    border-top-width: 0;
+.documentation ul, .documentation ol {
+    margin: 1.2rem 0;
+    padding-left: 1.5rem;
+    color: #d0d0d0;
 }
 
-a.desc:after {
-    border-top: solid 7px #212529;
-    border-bottom-width: 0;
+.documentation li {
+    margin-bottom: 0.5rem;
 }
 
-.grid-view th {
+.documentation pre {
+    background: #2a2a2a;
+    padding: 1.5rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    border: 1px solid #444444;
+    color: #e1e1e6;
+}
+
+.documentation code {
+    background: #2a2a2a;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #d0d0d0;
+}
+
+.documentation table {
+    width: 100%;
+    margin: 2rem 0;
+    border-collapse: collapse;
+    font-size: 1rem;
+    color: #e1e1e6;
+}
+
+.documentation th, .documentation td {
+    padding: 1rem;
+    border-bottom: 1px solid #444444;
+}
+
+.documentation th {
+    background: #2a2a2a;
+    text-align: left;
+    font-weight: 600;
+}
+
+.documentation td code {
     white-space: nowrap;
 }
 
-.hint-block {
-    display: block;
-    margin-top: 5px;
-    color: #999;
+.section {
+    margin: 3rem 0;
+    padding: 2rem;
+    background: #2a2a2a;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
 }
 
-.error-summary {
-    color: #a94442;
-    background: #fdf7f7;
-    border-left: 3px solid #eed3d7;
-    padding: 10px 20px;
-    margin: 0 0 15px 0;
+.endpoint {
+    margin: 2rem 0;
+    padding: 2rem;
+    background: #333333;
+    border-radius: 8px;
+    border-left: 4px solid #666666;
 }
 
-/* align the logout "link" (button in form) of the navbar */
-.nav li > form > button.logout {
-    padding-top: 7px;
-    color: rgba(255, 255, 255, 0.5);
+.method {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-right: 1rem;
+    text-transform: uppercase;
+    transition: background-color 0.3s, color 0.3s;
 }
 
-@media(max-width:767px) {
-    .nav li > form > button.logout {
-        display:block;
-        text-align: left;
-        width: 100%;
-        padding: 10px 0;
-    }
+.method:hover {
+    opacity: 0.8;
 }
 
-.nav > li > form > button.logout:focus,
-.nav > li > form > button.logout:hover {
-    text-decoration: none;
-    color: rgba(255, 255, 255, 0.75);
+.get {
+    background: #6ee7b7;
+    color: #064e3b;
 }
 
-.nav > li > form > button.logout:focus {
-    outline: none;
+.get:hover {
+    background: #34d399;
 }
 
-.form-group {
+.post {
+    background: #bfdbfe;
+    color: #1e40af;
+}
+
+.post:hover {
+    background: #60a5fa;
+}
+
+.put {
+    background: #fbbf24;
+    color: #7a3b00;
+}
+
+.put:hover {
+    background: #f59e0b;
+}
+
+.delete {
+    background: #fca5a5;
+    color: #991b1b;
+}
+
+.delete:hover {
+    background: #f87171;
+}
+
+.url {
+    font-family: monospace;
+    font-size: 1rem;
+    color: #61dafb;
+    text-decoration: underline;
+}
+
+.url:hover {
+    color: #21a8d8;
+}
+
+.command {
+    background-color: #fbbf24;
+    color: #1e3a8a;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 1rem;
+    transition: color 0.3s, background-color 0.3s;
+}
+
+.command:hover {
+    background-color: #f59e0b;
+    color: #0a1929;
+}
+
+.documentation .command {
+    display: inline-block;
     margin-bottom: 1rem;
+}
+
+.documentation .command:before {
+    content: '➤ ';
+    color: #f59e0b;
+}
+
+@media (max-width: 768px) {
+    .documentation {
+        padding: 20px 15px;
+    }
+
+    .documentation h1 {
+        font-size: 2rem;
+    }
+
+    .documentation h2 {
+        font-size: 1.5rem;
+    }
+
+    .documentation pre {
+        padding: 1rem;
+    }
+
+    .endpoint {
+        padding: 1.5rem;
+    }
+
+    .site-contact, .site-login {
+        padding: 20px;
+    }
+
+    .site-contact h1, .site-login h1 {
+        font-size: 2rem;
+    }
+
+    .site-contact p, .site-login p {
+        font-size: 1rem;
+    }
+
+    .site-contact input, .site-contact textarea, .site-login input, .site-login textarea {
+        padding: 0.6rem;
+    }
+
+    .site-contact .btn-primary, .site-login .btn-primary {
+        font-size: 0.9rem;
+        padding: 0.6rem 1.2rem;
+    }
+
+    .captcha-container {
+        flex-direction: column;
+    }
+
+    .captcha-container .col-lg-3, .captcha-container .col-lg-6 {
+        max-width: 100%;
+    }
 }
