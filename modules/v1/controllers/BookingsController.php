@@ -176,7 +176,6 @@ class BookingsController extends ActiveController
             $last30Days = date('Y-m-d', strtotime('-30 days')); // Remove H:i:s to match booking_date format
             $previous30Days = date('Y-m-d', strtotime('-60 days'));
 
-            // Fix total bookings query to use booking_date instead of start_time
             $totalBookingsLast30Days = (int)Bookings::find()
                 ->where(['website_id' => $websiteId])
                 ->andWhere(['>=', 'booking_date', $last30Days])
@@ -197,7 +196,7 @@ class BookingsController extends ActiveController
                 $bookingChangePercentage = 100; // Changed from null to 100% increase
             }
 
-            // Fix most selling time query - use TIME_FORMAT to handle time string
+
             $mostSellingTime = Bookings::find()
                 ->select(['HOUR(TIME(start_time)) as hour', 'COUNT(*) as count'])
                 ->where(['website_id' => $websiteId])
@@ -207,7 +206,7 @@ class BookingsController extends ActiveController
                 ->asArray()
                 ->one() ?: ['hour' => null, 'count' => 0];
 
-            // Most selling day query is correct, just ensure using booking_date
+
             $mostSellingDay = Bookings::find()
                 ->select(['DAYNAME(booking_date) as day', 'COUNT(*) as count'])
                 ->where(['website_id' => $websiteId])
@@ -217,7 +216,7 @@ class BookingsController extends ActiveController
                 ->asArray()
                 ->one() ?: ['day' => null, 'count' => 0];
 
-            // Fix most selling duration query to handle time strings
+
             $mostSellingDuration = Bookings::find()
                 ->select(['duration_minutes as duration', 'COUNT(*) as count'])
                 ->where(['website_id' => $websiteId])
@@ -227,7 +226,7 @@ class BookingsController extends ActiveController
                 ->asArray()
                 ->one() ?: ['duration' => null, 'count' => 0];
 
-            // Fix most selling service query
+
             $mostSellingService = Bookings::find()
                 ->select(['service_name', 'COUNT(*) as count'])
                 ->where(['website_id' => $websiteId])
@@ -241,7 +240,7 @@ class BookingsController extends ActiveController
                 return $total > 0 ? round(($count / $total) * 100, 2) : 0;
             };
 
-            // Fix return clients query to use booking_date
+
             $returnClientsData = Bookings::find()
                 ->select(['customer_contact', 'customer_name', 'COUNT(*) as count'])
                 ->where(['website_id' => $websiteId])

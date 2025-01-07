@@ -11,6 +11,7 @@ use yii\bootstrap5\Html;
 $this->title = 'Login';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
+<div class="documentation">
 <div class="site-login">
     <h1><?= Html::encode($this->title) ?></h1>
 
@@ -52,4 +53,5 @@ $this->params['breadcrumbs'][] = $this->title;
 
         </div>
     </div>
+</div>
 </div>
