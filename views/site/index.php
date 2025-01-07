@@ -49,7 +49,7 @@
     "customer_contact": "998908887766",
     "booking_date": "2024-10-30",
     "start_time": "12:00",
-    "end_time": "14:00",
+    "end_time": "12:30",
     "duration_minutes": "30"
 }</pre>
         </div>
