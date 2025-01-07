@@ -20,10 +20,10 @@ class SiteController extends Controller
         return [
             'access' => [
                 'class' => AccessControl::class,
-                'only' => ['index', 'about'],  // Allow these actions for everyone
+                'only' => ['index', 'about', 'uz'],  // Allow these actions for everyone
                 'rules' => [
                     [
-                        'actions' => ['index', 'about'],
+                        'actions' => ['index', 'about', 'uz'],
                         'allow' => true,  // Allow for all users (regardless of role)
                     ],
                     [
@@ -71,6 +71,11 @@ class SiteController extends Controller
     public function actionIndex()
     {
         return $this->render('index');
+    }
+
+    public function actionUz()
+    {
+        return $this->render('uz');
     }
 
 //    /**
