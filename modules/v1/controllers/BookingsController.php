@@ -48,7 +48,6 @@ class BookingsController extends ActiveController
     }
 
 
-
     /**
      * Customize the data provider for the index action to include _meta and _links
      */
@@ -149,5 +148,150 @@ class BookingsController extends ActiveController
         return [];  // Returning an empty array for body, as per convention
     }
 
+
+    public function actionStatistics(): array
+    {
+        // Get the currently authenticated website
+        $website = Yii::$app->user->identity;
+
+        if (!$website || !isset($website->id)) {
+            // Authentication failed
+            Yii::$app->response->statusCode = 401;
+            return [
+                'status' => 'error',
+                'message' => 'Authentication failed.',
+            ];
+        }
+
+        $websiteId = $website->id;
+
+        // Define date ranges
+        $last30Days = date('Y-m-d H:i:s', strtotime('-30 days'));
+        $previous30Days = date('Y-m-d H:i:s', strtotime('-60 days'));
+
+        // Calculate total bookings for the last 30 days
+        $totalBookingsLast30Days = Bookings::find()
+            ->where(['website_id' => $websiteId])
+            ->andWhere(['>=', 'start_time', $last30Days])
+            ->count();
+
+        // Calculate total bookings for the previous 30 days
+        $totalBookingsPrevious30Days = Bookings::find()
+            ->where(['website_id' => $websiteId])
+            ->andWhere(['>=', 'start_time', $previous30Days])
+            ->andWhere(['<', 'start_time', $last30Days])
+            ->count();
+
+        // Calculate percentage change correctly
+        if ($totalBookingsPrevious30Days > 0) {
+            $difference = $totalBookingsLast30Days - $totalBookingsPrevious30Days;
+            $bookingChangePercentage = round(($difference / $totalBookingsPrevious30Days) * 100, 2);
+        } else {
+            $bookingChangePercentage = $totalBookingsLast30Days > 0 ? null : 0;
+        }
+
+        // Most selling time (hour)
+        $mostSellingTime = Bookings::find()
+            ->select(['HOUR(start_time) as hour', 'COUNT(*) as count'])
+            ->where(['website_id' => $websiteId])
+            ->andWhere(['>=', 'start_time', $last30Days])
+            ->groupBy(['HOUR(start_time)'])
+            ->orderBy(['count' => SORT_DESC])
+            ->asArray()
+            ->one();
+        $mostSellingTime['percentage'] = round(($mostSellingTime['count'] / $totalBookingsLast30Days) * 100, 2);
+
+        // Most selling day
+        $mostSellingDay = Bookings::find()
+            ->select(['DAYNAME(booking_date) as day', 'COUNT(*) as count'])
+            ->where(['website_id' => $websiteId])
+            ->andWhere(['>=', 'booking_date', $last30Days])
+            ->groupBy(['DAYNAME(booking_date)'])
+            ->orderBy(['count' => SORT_DESC])
+            ->asArray()
+            ->one();
+
+        // Calculate the percentage
+        $mostSellingDay['percentage'] = round(($mostSellingDay['count'] / $totalBookingsLast30Days) * 100, 2);
+
+        // Most selling duration
+        $mostSellingDuration = Bookings::find()
+            ->select(['TIMESTAMPDIFF(MINUTE, start_time, end_time) as duration', 'COUNT(*) as count'])
+            ->where(['website_id' => $websiteId])
+            ->andWhere(['>=', 'start_time', $last30Days])
+            ->groupBy(['duration'])
+            ->orderBy(['count' => SORT_DESC])
+            ->asArray()
+            ->one();
+        $mostSellingDuration['percentage'] = round(($mostSellingDuration['count'] / $totalBookingsLast30Days) * 100, 2);
+
+        // Most selling service
+        $mostSellingService = Bookings::find()
+            ->select(['service_name', 'COUNT(*) as count'])
+            ->where(['website_id' => $websiteId])
+            ->andWhere(['>=', 'start_time', $last30Days])
+            ->groupBy(['service_name'])
+            ->orderBy(['count' => SORT_DESC])
+            ->asArray()
+            ->one();
+        $mostSellingService['percentage'] = round(($mostSellingService['count'] / $totalBookingsLast30Days) * 100, 2);
+
+        // Return clients with name
+        $returnClientsData = Bookings::find()
+            ->select(['customer_contact', 'customer_name', 'COUNT(*) as count'])
+            ->where(['website_id' => $websiteId])
+            ->andWhere(['>=', 'start_time', $last30Days])
+            ->groupBy(['customer_contact', 'customer_name']) // Group by contact and name
+            ->having(['>', 'COUNT(*)', 1])
+            ->asArray()
+            ->all();
+
+        // Calculate total return clients
+        $returnClientsNumber = count($returnClientsData);
+
+        // Format return clients
+        $returnClientsList = array_map(function ($client) {
+            return [
+                'customerContact' => $client['customer_contact'],
+                'customerName' => $client['customer_name'], // Add the name here
+                'bookings' => $client['count']
+            ];
+        }, $returnClientsData);
+
+        // Build response
+        return [
+            'status' => 'success',
+            'data' => [
+                'totalBookings' => [
+                    'count' => $totalBookingsLast30Days,
+                    'percentage' => $bookingChangePercentage,
+                ],
+                'mostSellingTime' => [
+                    'hour' => $mostSellingTime['hour'],
+                    'count' => $mostSellingTime['count'],
+                    'percentage' => $mostSellingTime['percentage'],
+                ],
+                'mostSellingDay' => [
+                    'day' => $mostSellingDay['day'],
+                    'count' => $mostSellingDay['count'],
+                    'percentage' => $mostSellingDay['percentage'],
+                ],
+                'mostSellingDuration' => [
+                    'durationMinutes' => $mostSellingDuration['duration'],
+                    'count' => $mostSellingDuration['count'],
+                    'percentage' => $mostSellingDuration['percentage'],
+                ],
+                'mostSellingService' => [
+                    'serviceName' => $mostSellingService['service_name'],
+                    'count' => $mostSellingService['count'],
+                    'percentage' => $mostSellingService['percentage'],
+                ],
+                'returnClients' => [
+                    'count' => $returnClientsNumber,
+                    'details' => $returnClientsList,
+                ],
+            ],
+        ];
+    }
 
 }
