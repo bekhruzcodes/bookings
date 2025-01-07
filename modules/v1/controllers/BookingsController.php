@@ -173,19 +173,19 @@ class BookingsController extends ActiveController
             }
 
             $websiteId = $website->id;
-            $last30Days = date('Y-m-d H:i:s', strtotime('-30 days'));
-            $previous30Days = date('Y-m-d H:i:s', strtotime('-60 days'));
+            $last30Days = date('Y-m-d', strtotime('-30 days')); // Remove H:i:s to match booking_date format
+            $previous30Days = date('Y-m-d', strtotime('-60 days'));
 
-            // Safely get total bookings with error handling
+            // Fix total bookings query to use booking_date instead of start_time
             $totalBookingsLast30Days = (int)Bookings::find()
                 ->where(['website_id' => $websiteId])
-                ->andWhere(['>=', 'start_time', $last30Days])
+                ->andWhere(['>=', 'booking_date', $last30Days])
                 ->count();
 
             $totalBookingsPrevious30Days = (int)Bookings::find()
                 ->where(['website_id' => $websiteId])
-                ->andWhere(['>=', 'start_time', $previous30Days])
-                ->andWhere(['<', 'start_time', $last30Days])
+                ->andWhere(['>=', 'booking_date', $previous30Days])
+                ->andWhere(['<', 'booking_date', $last30Days])
                 ->count();
 
             // Safe percentage calculation
@@ -194,26 +194,20 @@ class BookingsController extends ActiveController
                 $difference = $totalBookingsLast30Days - $totalBookingsPrevious30Days;
                 $bookingChangePercentage = round(($difference / $totalBookingsPrevious30Days) * 100, 2);
             } elseif ($totalBookingsLast30Days > 0) {
-                $bookingChangePercentage = null;
+                $bookingChangePercentage = 100; // Changed from null to 100% increase
             }
 
-            // Default values for aggregations
-            $defaultAggregation = [
-                'count' => 0,
-                'percentage' => 0
-            ];
-
-            // Safely get most selling time
+            // Fix most selling time query - use TIME_FORMAT to handle time string
             $mostSellingTime = Bookings::find()
-                ->select(['HOUR(start_time) as hour', 'COUNT(*) as count'])
+                ->select(['HOUR(TIME(start_time)) as hour', 'COUNT(*) as count'])
                 ->where(['website_id' => $websiteId])
-                ->andWhere(['>=', 'start_time', $last30Days])
-                ->groupBy(['HOUR(start_time)'])
+                ->andWhere(['>=', 'booking_date', $last30Days])
+                ->groupBy(['HOUR(TIME(start_time))'])
                 ->orderBy(['count' => SORT_DESC])
                 ->asArray()
                 ->one() ?: ['hour' => null, 'count' => 0];
 
-            // Safely get most selling day
+            // Most selling day query is correct, just ensure using booking_date
             $mostSellingDay = Bookings::find()
                 ->select(['DAYNAME(booking_date) as day', 'COUNT(*) as count'])
                 ->where(['website_id' => $websiteId])
@@ -223,36 +217,35 @@ class BookingsController extends ActiveController
                 ->asArray()
                 ->one() ?: ['day' => null, 'count' => 0];
 
-            // Safely get most selling duration
+            // Fix most selling duration query to handle time strings
             $mostSellingDuration = Bookings::find()
-                ->select(['TIMESTAMPDIFF(MINUTE, start_time, end_time) as duration', 'COUNT(*) as count'])
+                ->select(['duration_minutes as duration', 'COUNT(*) as count'])
                 ->where(['website_id' => $websiteId])
-                ->andWhere(['>=', 'start_time', $last30Days])
-                ->groupBy(['duration'])
+                ->andWhere(['>=', 'booking_date', $last30Days])
+                ->groupBy(['duration_minutes'])
                 ->orderBy(['count' => SORT_DESC])
                 ->asArray()
                 ->one() ?: ['duration' => null, 'count' => 0];
 
-            // Safely get most selling service
+            // Fix most selling service query
             $mostSellingService = Bookings::find()
                 ->select(['service_name', 'COUNT(*) as count'])
                 ->where(['website_id' => $websiteId])
-                ->andWhere(['>=', 'start_time', $last30Days])
+                ->andWhere(['>=', 'booking_date', $last30Days])
                 ->groupBy(['service_name'])
                 ->orderBy(['count' => SORT_DESC])
                 ->asArray()
                 ->one() ?: ['service_name' => null, 'count' => 0];
 
-            // Safe percentage calculations
             $calculatePercentage = function($count, $total) {
                 return $total > 0 ? round(($count / $total) * 100, 2) : 0;
             };
 
-            // Safely get return clients
+            // Fix return clients query to use booking_date
             $returnClientsData = Bookings::find()
                 ->select(['customer_contact', 'customer_name', 'COUNT(*) as count'])
                 ->where(['website_id' => $websiteId])
-                ->andWhere(['>=', 'start_time', $last30Days])
+                ->andWhere(['>=', 'booking_date', $last30Days])
                 ->groupBy(['customer_contact', 'customer_name'])
                 ->having(['>', 'COUNT(*)', 1])
                 ->asArray()
@@ -274,7 +267,7 @@ class BookingsController extends ActiveController
                         'percentage' => $bookingChangePercentage,
                     ],
                     'mostSellingTime' => [
-                        'hour' => $mostSellingTime['hour'],
+                        'hour' => (int)$mostSellingTime['hour'],
                         'count' => (int)$mostSellingTime['count'],
                         'percentage' => $calculatePercentage($mostSellingTime['count'], $totalBookingsLast30Days),
                     ],
@@ -284,7 +277,7 @@ class BookingsController extends ActiveController
                         'percentage' => $calculatePercentage($mostSellingDay['count'], $totalBookingsLast30Days),
                     ],
                     'mostSellingDuration' => [
-                        'durationMinutes' => $mostSellingDuration['duration'],
+                        'durationMinutes' => (int)$mostSellingDuration['duration'],
                         'count' => (int)$mostSellingDuration['count'],
                         'percentage' => $calculatePercentage($mostSellingDuration['count'], $totalBookingsLast30Days),
                     ],
