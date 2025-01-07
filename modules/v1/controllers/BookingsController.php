@@ -57,7 +57,16 @@ class BookingsController extends ActiveController
 
         // Override the data provider for index
         $actions['index']['prepareDataProvider'] = function () {
-            $query = Bookings::find();
+            $website = Yii::$app->user->identity;
+
+            if (!$website || !isset($website->id)) {
+                // Authentication failed
+                throw new \yii\web\UnauthorizedHttpException('Authentication failed.');
+            }
+
+            $websiteId = $website->id;
+
+            $query = Bookings::find()->andWhere(['website_id' => $websiteId]);
 
             // Pagination (automatically handles `per-page` and `page` from query parameters)
             $pagination = new Pagination([
