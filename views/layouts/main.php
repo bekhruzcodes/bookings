@@ -33,14 +33,14 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
     <?php
     NavBar::begin([
         'brandLabel' => "Bekhruzbek",
-        'brandUrl' => Yii::$app->homeUrl,
+        'brandUrl' => Yii::$app->urlManager->createUrl(['site/about']),
         'options' => ['class' => 'navbar-expand-md navbar-dark bg-dark fixed-top']
     ]);
     echo Nav::widget([
         'options' => ['class' => 'navbar-nav'],
         'items' => [
-            ['label' => 'API', 'url' => ['/site/index']],
-            ['label' => 'About', 'url' => ['/site/about']]
+            ['label' => 'En', 'url' => ['/site/index']],
+            ['label' => 'Uz', 'url' => ['/site/uz']],
 
         ]
     ]);

@@ -160,7 +160,7 @@
             </li>
             <li>
                 Add the repository as remote and pull:
-                <pre>git remote add origin https://github.com/yourusername/booking-api.git
+                <pre>git remote add origin https://github.com/bekhruzcodes/bookings.git
 git pull origin main</pre>
             </li>
             <li>
