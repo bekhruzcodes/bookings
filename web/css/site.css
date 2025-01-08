@@ -1,11 +1,12 @@
 .documentation {
     max-width: 100%;
     margin: 0 auto;
-    padding: 10% 15%;
+    padding: 5% 10%;
     font-family: system-ui, -apple-system, sans-serif;
     line-height: 1.6;
     color: #e1e1e6;
     background-color: #1e1e1e;
+    word-wrap: break-word;
 }
 
 .documentation h1 {
@@ -72,6 +73,8 @@
     border-collapse: collapse;
     font-size: 1rem;
     color: #e1e1e6;
+    word-break: break-word;
+    overflow: hidden;
 }
 
 .documentation th, .documentation td {
@@ -103,6 +106,7 @@
     background: #333333;
     border-radius: 8px;
     border-left: 4px solid #666666;
+    overflow: hidden;
 }
 
 .method {
@@ -148,6 +152,7 @@
 }
 
 .delete {
+    width: 80px;
     background: #fca5a5;
     color: #991b1b;
 }
@@ -161,6 +166,7 @@
     font-size: 1rem;
     color: #61dafb;
     text-decoration: underline;
+    word-wrap: break-word;
 }
 
 .url:hover {
@@ -192,9 +198,35 @@
     color: #f59e0b;
 }
 
+@media (max-width: 1024px) {
+    .documentation {
+        padding: 8% 8%;
+    }
+
+    .documentation h1 {
+        font-size: 2.2rem;
+    }
+
+    .documentation h2 {
+        font-size: 1.6rem;
+    }
+
+    .documentation pre {
+        padding: 1.2rem;
+    }
+
+    .endpoint {
+        padding: 1.5rem;
+    }
+
+    .documentation table {
+        font-size: 0.9rem;
+    }
+}
+
 @media (max-width: 768px) {
     .documentation {
-        padding: 20px 15px;
+        padding: 20px 10px;
     }
 
     .documentation h1 {
@@ -210,35 +242,60 @@
     }
 
     .endpoint {
+        padding: 1.2rem;
+    }
+
+    .section {
+        margin: 2rem 0;
         padding: 1.5rem;
     }
 
-    .site-contact, .site-login {
-        padding: 20px;
+    .documentation table {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .documentation {
+        padding: 15px 8px;
     }
 
-    .site-contact h1, .site-login h1 {
-        font-size: 2rem;
+
+
+    .documentation h1 {
+        font-size: 1.8rem;
     }
 
-    .site-contact p, .site-login p {
+    .documentation h2 {
+        font-size: 1.4rem;
+    }
+
+    .documentation h3 {
+        font-size: 1.2rem;
+    }
+
+    .documentation p {
         font-size: 1rem;
     }
 
-    .site-contact input, .site-contact textarea, .site-login input, .site-login textarea {
-        padding: 0.6rem;
+    .documentation pre {
+        padding: 0.8rem;
+        font-size: 0.8rem;
     }
 
-    .site-contact .btn-primary, .site-login .btn-primary {
-        font-size: 0.9rem;
-        padding: 0.6rem 1.2rem;
+    .endpoint {
+        padding: 1rem;
     }
 
-    .captcha-container {
-        flex-direction: column;
+    .section {
+        margin: 1.5rem 0;
+        padding: 1rem;
     }
 
-    .captcha-container .col-lg-3, .captcha-container .col-lg-6 {
-        max-width: 100%;
+    .documentation table {
+        font-size: 0.7rem;
     }
 }
+
+
+
