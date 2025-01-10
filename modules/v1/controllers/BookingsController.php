@@ -7,6 +7,7 @@ use yii\rest\ActiveController;
 use yii\web\Response;
 use yii\data\ActiveDataProvider;
 use yii\data\Pagination;
+use yii\filters\Cors;
 use yii\helpers\Url;
 use app\modules\v1\components\CustomBearerAuth;
 use app\modules\v1\models\Bookings;
@@ -22,6 +23,17 @@ class BookingsController extends ActiveController
     {
         $behaviors = parent::behaviors();
 
+        $behaviors['corsFilter'] = [
+            'class' => Cors::class,
+            'cors' => [
+                'Origin' => ['*'], // Allow all origins
+                'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+                'Access-Control-Allow-Credentials' => false, // Set to true if cookies are needed
+                'Access-Control-Max-Age' => 3600, // Cache preflight request for 1 hour
+                'Access-Control-Allow-Headers' => ['Authorization', 'Content-Type'],
+            ],
+        ];
+        
         // Force JSON responses
         $behaviors['contentNegotiator']['formats']['application/json'] = Response::FORMAT_JSON;
 
