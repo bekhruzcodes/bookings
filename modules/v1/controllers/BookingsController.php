@@ -23,6 +23,7 @@ class BookingsController extends ActiveController
     {
         $behaviors = parent::behaviors();
 
+        // Add CORS filter
         $behaviors['corsFilter'] = [
             'class' => Cors::class,
             'cors' => [

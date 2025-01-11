@@ -1,15 +1,26 @@
-RewriteEngine on
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule . index.php [L]
+# Enable URL rewriting
+<IfModule mod_rewrite.c>
+    RewriteEngine On
 
-# CORS settings
-<IfModule mod_headers.c>
-    Header set Access-Control-Allow-Origin "*"
-    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-    Header set Access-Control-Allow-Headers "Authorization, Content-Type"
-    Header set Access-Control-Allow-Credentials "true"
-    
-    # Allow preflight requests (OPTIONS)
-    Header set Access-Control-Max-Age "3600"
+    # Redirect all requests except existing files and directories to index.php
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+
+    # Handle preflight requests for CORS
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ $1 [R=200,L]
 </IfModule>
+
+# Enable Cross-Origin Resource Sharing (CORS)
+<IfModule mod_headers.c>
+    <FilesMatch "\.(php|html|json)$"> 
+        Header always set Access-Control-Allow-Origin "*"
+        Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Header always set Access-Control-Allow-Headers "Authorization, Content-Type, X-Requested-With"
+        Header always set Access-Control-Max-Age "3600"
+    </FilesMatch>
+</IfModule>
+
+# Security: Disable directory listing
+Options -Indexes
