@@ -4,6 +4,7 @@ namespace app\modules\v1\controllers;
 
 use app\modules\v1\services\StatisticsService;
 use Yii;
+use yii\db\Exception;
 use yii\rest\ActiveController;
 use yii\web\Response;
 use yii\data\ActiveDataProvider;
@@ -19,33 +20,33 @@ class BookingsController extends ActiveController
     public $modelClass = Bookings::class;
 
     /**
-     * Attach Bearer Token Authentication
+     * Attach Bearer Token Authentication and CORS
      */
     public function behaviors(): array
     {
         $behaviors = parent::behaviors();
+        $behaviors['corsFilter'] = $this->corsSettings();
+        $behaviors['contentNegotiator']['formats']['application/json'] = Response::FORMAT_JSON;
+        $behaviors['authenticator'] = ['class' => CustomBearerAuth::class];
 
-        // Add CORS filter
-        $behaviors['corsFilter'] = [
+        return $behaviors;
+    }
+
+    /**
+     * CORS Settings
+     */
+    private function corsSettings(): array
+    {
+        return [
             'class' => Cors::class,
             'cors' => [
-                'Origin' => ['*'], // Allow all origins
+                'Origin' => ['*'],
                 'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-                'Access-Control-Allow-Credentials' => false, // Set to true if cookies are needed
-                'Access-Control-Max-Age' => 3600, // Cache preflight request for 1 hour
+                'Access-Control-Allow-Credentials' => false,
+                'Access-Control-Max-Age' => 3600,
                 'Access-Control-Allow-Headers' => ['Authorization', 'Content-Type'],
             ],
         ];
-        
-        // Force JSON responses
-        $behaviors['contentNegotiator']['formats']['application/json'] = Response::FORMAT_JSON;
-
-        // Use Custom Bearer Authentication
-        $behaviors['authenticator'] = [
-            'class' => CustomBearerAuth::class,
-        ];
-
-        return $behaviors;
     }
 
     /**
@@ -62,138 +63,151 @@ class BookingsController extends ActiveController
         ];
     }
 
-
     /**
      * Customize the data provider for the index action to include _meta and _links
      */
     public function actions(): array
     {
         $actions = parent::actions();
-
-        // Override the data provider for index
-        $actions['index']['prepareDataProvider'] = function () {
-            $website = Yii::$app->user->identity;
-
-            if (!$website || !isset($website->id)) {
-                // Authentication failed
-                throw new \yii\web\UnauthorizedHttpException('Authentication failed.');
-            }
-
-            $websiteId = $website->id;
-
-            $query = Bookings::find()->andWhere(['website_id' => $websiteId]);
-
-            // Pagination (automatically handles `per-page` and `page` from query parameters)
-            $pagination = new Pagination([
-                'totalCount' => $query->count(),
-                'pageSize' => \Yii::$app->request->get('per-page', 10), // Default to 10 if not provided
-                'pageSizeLimit' => [1, 100], // Set limits for `per-page`
-            ]);
-
-            // Data provider
-            $dataProvider = new ActiveDataProvider([
-                'query' => $query,
-                'pagination' => $pagination,
-            ]);
-
-            $models = $dataProvider->getModels();
-
-            // Build response
-            return [
-                '_meta' => [
-                    'totalCount' => $pagination->totalCount,
-                    'pageCount' => $pagination->getPageCount(),
-                    'currentPage' => $pagination->getPage() + 1,
-                    'perPage' => $pagination->getPageSize(),
-                ],
-                '_links' => [
-                    'self' => Url::to(['index', 'page' => $pagination->getPage() + 1, 'per-page' => $pagination->getPageSize()], true),
-                    'next' => $pagination->getPage() + 1 < $pagination->getPageCount() ? Url::to(['index', 'page' => $pagination->getPage() + 2, 'per-page' => $pagination->getPageSize()], true) : null,
-                    'prev' => $pagination->getPage() > 0 ? Url::to(['index', 'page' => $pagination->getPage(), 'per-page' => $pagination->getPageSize()], true) : null,
-                ],
-                'data' => $models,
-            ];
-        };
-
-        unset($actions['create']);
-        unset($actions['options']);
+        $actions['index']['prepareDataProvider'] = fn() => $this->prepareDataProvider();
+        unset($actions['create'], $actions['options']);
         return $actions;
     }
 
-    public function actionCreate(): array
+    /**
+     * Prepares the data provider for the index action.
+     * @throws UnauthorizedHttpException
+     */
+    private function prepareDataProvider(): array
     {
-        // Get the currently authenticated website
-        $website = Yii::$app->user->identity;
+        $website = $this->getAuthenticatedWebsite();
+        $query = Bookings::find()->andWhere(['website_id' => $website->id]);
 
-        if ($website && isset($website->id)) {
-            $model = new Bookings();
+        // Optimizing pagination logic
+        $pagination = $this->getPagination($query);
 
-            if ($model->load(Yii::$app->request->post(), '')) {
-                $model->website_id = $website->id;
+        // Use pagination to get models
+        $dataProvider = new ActiveDataProvider([
+            'query' => $query,
+            'pagination' => $pagination,
+        ]);
 
-                if ($model->save()) {
-                    // Return success with status 201 Created
-                    Yii::$app->response->statusCode = 201;
-                    return [
-                        'status' => 'success',
-                        'data' => $model,
-                    ];
-                } else {
-                    // Validation failed, return error with status 422 Unprocessable Entity
-                    Yii::$app->response->statusCode = 422;
-                    return [
-                        'status' => 'error',
-                        'errors' => $model->errors,
-                    ];
-                }
-            }
-
-            // Input data invalid, return error with status 400 Bad Request
-            Yii::$app->response->statusCode = 400;
-            return [
-                'status' => 'error',
-                'message' => 'Invalid input data.',
-            ];
-        } else {
-            // Authentication failed, return error with status 401 Unauthorized
-            Yii::$app->response->statusCode = 401;
-            return [
-                'status' => 'error',
-                'message' => 'Authentication failed or website_id is missing.',
-            ];
-        }
+        return [
+            '_meta' => $this->getMetaData($pagination),
+            '_links' => $this->getLinks($pagination),
+            'data' => $dataProvider->getModels(),
+        ];
     }
-
-
-    public function actionOptions(): array
-    {
-        Yii::$app->response->statusCode = 204;  // Indicating "No Content"
-        Yii::$app->response->headers->add('Allow', 'GET, POST, PUT, DELETE, OPTIONS');  // Define allowed methods
-        return [];  // Returning an empty array for body, as per convention
-    }
-
 
     /**
+     * Get authenticated website.
+     * @throws UnauthorizedHttpException
+     */
+    private function getAuthenticatedWebsite()
+    {
+        $website = Yii::$app->user->identity;
+        if (!$website || !isset($website->id)) {
+            throw new UnauthorizedHttpException('Authentication failed.');
+        }
+        return $website;
+    }
+
+    /**
+     * Get pagination settings.
+     */
+    private function getPagination($query): Pagination
+    {
+        $totalCount = $query->count();
+        return new Pagination([
+            'totalCount' => $totalCount,
+            'pageSize' => Yii::$app->request->get('per-page', 10),
+            'pageSizeLimit' => [1, 100],
+        ]);
+    }
+
+    /**
+     * Get metadata for the response.
+     */
+    private function getMetaData(Pagination $pagination): array
+    {
+        return [
+            'totalCount' => $pagination->totalCount,
+            'pageCount' => $pagination->getPageCount(),
+            'currentPage' => $pagination->getPage() + 1,
+            'perPage' => $pagination->getPageSize(),
+        ];
+    }
+
+    /**
+     * Get links for pagination.
+     */
+    private function getLinks(Pagination $pagination): array
+    {
+        return [
+            'self' => Url::to(['index', 'page' => $pagination->getPage() + 1, 'per-page' => $pagination->getPageSize()], true),
+            'next' => $pagination->getPage() + 1 < $pagination->getPageCount() ? Url::to(['index', 'page' => $pagination->getPage() + 2, 'per-page' => $pagination->getPageSize()], true) : null,
+            'prev' => $pagination->getPage() > 0 ? Url::to(['index', 'page' => $pagination->getPage(), 'per-page' => $pagination->getPageSize()], true) : null,
+        ];
+    }
+
+    /**
+     * Handle the creation action.
+     * @throws UnauthorizedHttpException|Exception
+     */
+    public function actionCreate(): array
+    {
+        $website = $this->getAuthenticatedWebsite();
+        $model = new Bookings();
+
+        if ($model->load(Yii::$app->request->post(), '')) {
+            $model->website_id = $website->id;
+            if ($model->save()) {
+                return [
+                    'status' => 'success',
+                    'data' => $model,
+                ];
+            }
+            return $this->unprocessableEntity($model);
+        }
+
+        return $this->badRequest();
+    }
+
+    /**
+     * Generalized response handling for bad requests.
+     */
+    private function badRequest(): array
+    {
+        Yii::$app->response->statusCode = 400;
+        return [
+            'status' => 'error',
+            'message' => 'Invalid input data.',
+        ];
+    }
+
+    /**
+     * Generalized response handling for unprocessable entity errors.
+     */
+    private function unprocessableEntity($model): array
+    {
+        Yii::$app->response->statusCode = 422;
+        return [
+            'status' => 'error',
+            'errors' => $model->errors,
+        ];
+    }
+
+    /**
+     * Handle statistics request.
      * @throws UnauthorizedHttpException
      */
     public function actionStatistics(): array
     {
-        $website = Yii::$app->user->identity;
-
-        if (!$website || !isset($website->id)) {
-            Yii::$app->response->statusCode = 401;
-            return [
-                'status' => 'error',
-                'message' => 'Authentication failed.',
-            ];
-        }
-
+        $website = $this->getAuthenticatedWebsite();
         $service = new StatisticsService($website->id);
-
         return [
             'status' => 'success',
             'data' => $service->getStatistics(),
         ];
     }
-
 }
