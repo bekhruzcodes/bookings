@@ -2,6 +2,7 @@
 
 namespace app\modules\v1\controllers;
 
+use app\modules\v1\services\StatisticsService;
 use Yii;
 use yii\rest\ActiveController;
 use yii\web\Response;
@@ -11,6 +12,7 @@ use yii\filters\Cors;
 use yii\helpers\Url;
 use app\modules\v1\components\CustomBearerAuth;
 use app\modules\v1\models\Bookings;
+use yii\web\UnauthorizedHttpException;
 
 class BookingsController extends ActiveController
 {
@@ -171,146 +173,27 @@ class BookingsController extends ActiveController
     }
 
 
+    /**
+     * @throws UnauthorizedHttpException
+     */
     public function actionStatistics(): array
     {
-        try {
-            // Get the currently authenticated website
-            $website = Yii::$app->user->identity;
+        $website = Yii::$app->user->identity;
 
-            if (!$website || !isset($website->id)) {
-                Yii::$app->response->statusCode = 401;
-                return [
-                    'status' => 'error',
-                    'message' => 'Authentication failed.',
-                ];
-            }
-
-            $websiteId = $website->id;
-            $last30Days = date('Y-m-d', strtotime('-30 days')); // Remove H:i:s to match booking_date format
-            $previous30Days = date('Y-m-d', strtotime('-60 days'));
-
-            $totalBookingsLast30Days = (int)Bookings::find()
-                ->where(['website_id' => $websiteId])
-                ->andWhere(['>=', 'booking_date', $last30Days])
-                ->count();
-
-            $totalBookingsPrevious30Days = (int)Bookings::find()
-                ->where(['website_id' => $websiteId])
-                ->andWhere(['>=', 'booking_date', $previous30Days])
-                ->andWhere(['<', 'booking_date', $last30Days])
-                ->count();
-
-            // Safe percentage calculation
-            $bookingChangePercentage = 0;
-            if ($totalBookingsPrevious30Days > 0) {
-                $difference = $totalBookingsLast30Days - $totalBookingsPrevious30Days;
-                $bookingChangePercentage = round(($difference / $totalBookingsPrevious30Days) * 100, 2);
-            } elseif ($totalBookingsLast30Days > 0) {
-                $bookingChangePercentage = 100; // Changed from null to 100% increase
-            }
-
-
-            $mostSellingTime = Bookings::find()
-                ->select(['HOUR(TIME(start_time)) as hour', 'COUNT(*) as count'])
-                ->where(['website_id' => $websiteId])
-                ->andWhere(['>=', 'booking_date', $last30Days])
-                ->groupBy(['HOUR(TIME(start_time))'])
-                ->orderBy(['count' => SORT_DESC])
-                ->asArray()
-                ->one() ?: ['hour' => null, 'count' => 0];
-
-
-            $mostSellingDay = Bookings::find()
-                ->select(['DAYNAME(booking_date) as day', 'COUNT(*) as count'])
-                ->where(['website_id' => $websiteId])
-                ->andWhere(['>=', 'booking_date', $last30Days])
-                ->groupBy(['DAYNAME(booking_date)'])
-                ->orderBy(['count' => SORT_DESC])
-                ->asArray()
-                ->one() ?: ['day' => null, 'count' => 0];
-
-
-            $mostSellingDuration = Bookings::find()
-                ->select(['duration_minutes as duration', 'COUNT(*) as count'])
-                ->where(['website_id' => $websiteId])
-                ->andWhere(['>=', 'booking_date', $last30Days])
-                ->groupBy(['duration_minutes'])
-                ->orderBy(['count' => SORT_DESC])
-                ->asArray()
-                ->one() ?: ['duration' => null, 'count' => 0];
-
-
-            $mostSellingService = Bookings::find()
-                ->select(['service_name', 'COUNT(*) as count'])
-                ->where(['website_id' => $websiteId])
-                ->andWhere(['>=', 'booking_date', $last30Days])
-                ->groupBy(['service_name'])
-                ->orderBy(['count' => SORT_DESC])
-                ->asArray()
-                ->one() ?: ['service_name' => null, 'count' => 0];
-
-            $calculatePercentage = function($count, $total) {
-                return $total > 0 ? round(($count / $total) * 100, 2) : 0;
-            };
-
-
-            $returnClientsData = Bookings::find()
-                ->select(['customer_contact', 'customer_name', 'COUNT(*) as count'])
-                ->where(['website_id' => $websiteId])
-                ->andWhere(['>=', 'booking_date', $last30Days])
-                ->groupBy(['customer_contact', 'customer_name'])
-                ->having(['>', 'COUNT(*)', 1])
-                ->asArray()
-                ->all();
-
-            $returnClientsList = array_map(function ($client) {
-                return [
-                    'customerContact' => $client['customer_contact'] ?? '',
-                    'customerName' => $client['customer_name'] ?? '',
-                    'bookings' => (int)($client['count'] ?? 0)
-                ];
-            }, $returnClientsData ?: []);
-
-            return [
-                'status' => 'success',
-                'data' => [
-                    'totalBookings' => [
-                        'count' => $totalBookingsLast30Days,
-                        'percentage' => $bookingChangePercentage,
-                    ],
-                    'mostSellingTime' => [
-                        'hour' => (int)$mostSellingTime['hour'],
-                        'count' => (int)$mostSellingTime['count'],
-                        'percentage' => $calculatePercentage($mostSellingTime['count'], $totalBookingsLast30Days),
-                    ],
-                    'mostSellingDay' => [
-                        'day' => $mostSellingDay['day'],
-                        'count' => (int)$mostSellingDay['count'],
-                        'percentage' => $calculatePercentage($mostSellingDay['count'], $totalBookingsLast30Days),
-                    ],
-                    'mostSellingDuration' => [
-                        'durationMinutes' => (int)$mostSellingDuration['duration'],
-                        'count' => (int)$mostSellingDuration['count'],
-                        'percentage' => $calculatePercentage($mostSellingDuration['count'], $totalBookingsLast30Days),
-                    ],
-                    'mostSellingService' => [
-                        'serviceName' => $mostSellingService['service_name'],
-                        'count' => (int)$mostSellingService['count'],
-                        'percentage' => $calculatePercentage($mostSellingService['count'], $totalBookingsLast30Days),
-                    ],
-                    'returnClients' => [
-                        'count' => count($returnClientsList),
-                        'details' => $returnClientsList,
-                    ],
-                ],
-            ];
-        } catch (\Exception $e) {
-            Yii::error("Statistics calculation error: " . $e->getMessage());
-            Yii::$app->response->statusCode = 500;
+        if (!$website || !isset($website->id)) {
+            Yii::$app->response->statusCode = 401;
             return [
                 'status' => 'error',
-                'message' => 'An error occurred while calculating statistics.',
+                'message' => 'Authentication failed.',
             ];
         }
+
+        $service = new StatisticsService($website->id);
+
+        return [
+            'status' => 'success',
+            'data' => $service->getStatistics(),
+        ];
     }
+
 }
