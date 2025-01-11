@@ -207,9 +207,10 @@ class BookingsController extends ActiveController
             return $this->badRequest('Invalid date format. Use Y-m-d.');
         }
 
-        if ($duration_minutes <= 0) {
-            return $this->badRequest('Invalid duration_minutes parameter.');
+        if (!in_array($duration_minutes, [15, 30, 60, 90, 120])) {
+            return $this->badRequest('Invalid duration_minutes parameter. Allowed values are 15, 30, 60, 90, and 120.');
         }
+
 
         // Use SlotService to get available slots
         $slotService = new SlotService();
