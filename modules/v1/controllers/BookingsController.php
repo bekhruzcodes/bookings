@@ -2,8 +2,10 @@
 
 namespace app\modules\v1\controllers;
 
+use app\modules\v1\services\SlotService;
 use app\modules\v1\services\StatisticsService;
 use app\modules\v1\traits\ResponseHelperTrait;
+use DateMalformedStringException;
 use Yii;
 use yii\db\Exception;
 use yii\rest\ActiveController;
@@ -186,4 +188,47 @@ class BookingsController extends ActiveController
         $service = new StatisticsService($website->id);
         return $this->successResponse($service->getStatistics());
     }
+
+
+    /**
+     * Get available slots for a specific date and duration in minutes.
+     * @param string $date Date in Y-m-d format
+     * @param int $duration_minutes Duration in minutes
+     * @return array
+     * @throws UnauthorizedHttpException
+     * @throws DateMalformedStringException
+     */
+    public function actionAvailableSlots(string $date, int $duration_minutes): array
+    {
+        $website = $this->getAuthenticatedWebsite();
+
+        // Validate inputs
+        if (!$this->isValidDate($date)) {
+            return $this->badRequest('Invalid date format. Use Y-m-d.');
+        }
+
+        if ($duration_minutes <= 0) {
+            return $this->badRequest('Invalid duration_minutes parameter.');
+        }
+
+        // Use SlotService to get available slots
+        $slotService = new SlotService();
+        $available_slots = $slotService->getAvailableSlots($website->id, $date, $duration_minutes);
+
+        return $this->successResponse(['available_slots' => $available_slots]);
+    }
+
+    /**
+     * Validate date format.
+     * @param string $date
+     * @return bool
+     */
+    private function isValidDate(string $date): bool
+    {
+        $d = \DateTime::createFromFormat('Y-m-d', $date);
+        return $d && $d->format('Y-m-d') === $date;
+    }
+
+
+
 }

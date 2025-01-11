@@ -7,12 +7,12 @@ trait ResponseHelperTrait
     /**
      * Generalized response handling for bad requests.
      */
-    private function badRequest(): array
+    private function badRequest($message='Invalid input data.'): array
     {
         Yii::$app->response->statusCode = 400;
         return [
             'status' => 'error',
-            'message' => 'Invalid input data.',
+            'message' => $message,
         ];
     }
 
