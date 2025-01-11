@@ -3,6 +3,7 @@
 namespace app\modules\v1\controllers;
 
 use app\modules\v1\services\StatisticsService;
+use app\modules\v1\traits\ResponseHelperTrait;
 use Yii;
 use yii\db\Exception;
 use yii\rest\ActiveController;
@@ -15,8 +16,13 @@ use app\modules\v1\components\CustomBearerAuth;
 use app\modules\v1\models\Bookings;
 use yii\web\UnauthorizedHttpException;
 
+
 class BookingsController extends ActiveController
 {
+    use ResponseHelperTrait;
+
+    // Include the trait
+
     public $modelClass = Bookings::class;
 
     /**
@@ -83,10 +89,10 @@ class BookingsController extends ActiveController
         $website = $this->getAuthenticatedWebsite();
         $query = Bookings::find()->andWhere(['website_id' => $website->id]);
 
-        // Optimizing pagination logic
+// Optimizing pagination logic
         $pagination = $this->getPagination($query);
 
-        // Use pagination to get models
+// Use pagination to get models
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'pagination' => $pagination,
@@ -162,39 +168,12 @@ class BookingsController extends ActiveController
         if ($model->load(Yii::$app->request->post(), '')) {
             $model->website_id = $website->id;
             if ($model->save()) {
-                return [
-                    'status' => 'success',
-                    'data' => $model,
-                ];
+                return $this->createdResponse($model);
             }
             return $this->unprocessableEntity($model);
         }
 
         return $this->badRequest();
-    }
-
-    /**
-     * Generalized response handling for bad requests.
-     */
-    private function badRequest(): array
-    {
-        Yii::$app->response->statusCode = 400;
-        return [
-            'status' => 'error',
-            'message' => 'Invalid input data.',
-        ];
-    }
-
-    /**
-     * Generalized response handling for unprocessable entity errors.
-     */
-    private function unprocessableEntity($model): array
-    {
-        Yii::$app->response->statusCode = 422;
-        return [
-            'status' => 'error',
-            'errors' => $model->errors,
-        ];
     }
 
     /**
@@ -205,9 +184,6 @@ class BookingsController extends ActiveController
     {
         $website = $this->getAuthenticatedWebsite();
         $service = new StatisticsService($website->id);
-        return [
-            'status' => 'success',
-            'data' => $service->getStatistics(),
-        ];
+        return $this->successResponse($service->getStatistics());
     }
 }
