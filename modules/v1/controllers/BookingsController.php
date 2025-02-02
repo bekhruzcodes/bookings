@@ -17,13 +17,11 @@ use yii\helpers\Url;
 use app\modules\v1\components\CustomBearerAuth;
 use app\modules\v1\models\Bookings;
 use yii\web\UnauthorizedHttpException;
-
+use yii\web\NotFoundHttpException;
 
 class BookingsController extends ActiveController
 {
     use ResponseHelperTrait;
-
-    // Include the trait
 
     public $modelClass = Bookings::class;
 
@@ -78,7 +76,7 @@ class BookingsController extends ActiveController
     {
         $actions = parent::actions();
         $actions['index']['prepareDataProvider'] = fn() => $this->prepareDataProvider();
-        unset($actions['create'], $actions['options']);
+        unset($actions['create'], $actions['delete']);
         return $actions;
     }
 
@@ -89,12 +87,12 @@ class BookingsController extends ActiveController
     private function prepareDataProvider(): array
     {
         $website = $this->getAuthenticatedWebsite();
-        $query = Bookings::find()->andWhere(['website_id' => $website->id]);
+        $query = Bookings::find()->andWhere(['website_id' => $website->id])->andWhere(['!=', 'status', 'deleted']);
 
-// Optimizing pagination logic
+        // Optimizing pagination logic
         $pagination = $this->getPagination($query);
 
-// Use pagination to get models
+        // Use pagination to get models
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'pagination' => $pagination,
@@ -179,6 +177,33 @@ class BookingsController extends ActiveController
     }
 
     /**
+     * Soft delete action - updates status to 'deleted'
+     * @param int $id The booking ID
+     * @return array Response array
+     * @throws UnauthorizedHttpException
+     * @throws NotFoundHttpException
+     */
+    public function actionDelete($id): array
+    {
+        $website = $this->getAuthenticatedWebsite();
+        $model = Bookings::find()
+            ->where(['id' => $id, 'website_id' => $website->id])
+            ->one();
+
+        if (!$model) {
+            throw new NotFoundHttpException('Booking not found.');
+        }
+
+        $model->status = 'deleted';
+
+        if ($model->save(false)) {  // false parameter skips validation since we're only updating status
+            return $this->successResponse(['message' => 'Booking successfully deleted.']);
+        }
+
+        return $this->serverError('Failed to delete booking.');
+    }
+
+    /**
      * Handle statistics request.
      * @throws UnauthorizedHttpException
      */
@@ -188,7 +213,6 @@ class BookingsController extends ActiveController
         $service = new StatisticsService($website->id);
         return $this->successResponse($service->getStatistics());
     }
-
 
     /**
      * Get available slots for a specific date and duration in minutes.
@@ -211,7 +235,6 @@ class BookingsController extends ActiveController
             return $this->badRequest('Invalid duration_minutes parameter. Allowed values are 15, 30, 60, 90, and 120.');
         }
 
-
         // Use SlotService to get available slots
         $slotService = new SlotService();
         $available_slots = $slotService->getAvailableSlots($website->id, $date, $duration_minutes);
@@ -229,7 +252,4 @@ class BookingsController extends ActiveController
         $d = \DateTime::createFromFormat('Y-m-d', $date);
         return $d && $d->format('Y-m-d') === $date;
     }
-
-
-
 }
