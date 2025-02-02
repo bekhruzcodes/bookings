@@ -7,9 +7,11 @@ use yii\db\Migration;
  */
 class m250117_175442_update_duration_minutes extends Migration
 {
-     public function safeUp()
+
+    public function safeUp()
     {
-        
+
+
 
         // Modify the `duration_minutes` column to include 15 and 45 minutes
         $this->alterColumn('{{%bookings}}', 'duration_minutes', $this->integer()->notNull()->check("duration_minutes IN (15, 30, 45, 60, 90, 120)"));
